@@ -12,11 +12,10 @@ import java.util.Collections;
 import java.util.List;
 
 public class Happy extends Application {
-	// to add numbers
+    // to add numbers
     private static final int GRID_SIZE = 3;
     private final int[][] gridState = new int[GRID_SIZE][GRID_SIZE];
     private final Button[][] boardButtons = new Button[GRID_SIZE][GRID_SIZE];
-    private final List<GameStateRecord> moveHistory = new ArrayList<>();
     // add numbers and grid
     private int emptyRow = 2;
     private int emptyCol = 2;
@@ -27,19 +26,6 @@ public class Happy extends Application {
     private final Label statusLabel = new Label("Ready");
     private final Label moveCounterLabel = new Label();
     private final TextField maxMovesInput = new TextField("20");
-
-    private static class GameStateRecord {
-        final int[][] snapshot = new int[GRID_SIZE][GRID_SIZE];
-        final int blankR, blankC;
-
-        GameStateRecord(int[][] currentGrid, int r, int c) {
-            for (int i = 0; i < GRID_SIZE; i++) {
-                System.arraycopy(currentGrid[i], 0, snapshot[i], 0, GRID_SIZE);
-            }
-            this.blankR = r;
-            this.blankC = c;
-        }
-    }
 
     @Override
     public void start(Stage primaryStage) {
@@ -85,11 +71,22 @@ public class Happy extends Application {
         infoBar.setPadding(new Insets(10));
 
         startBtn.setOnAction(e -> startNewGame());
-        resetBtn.setOnAction(e -> resetToDefault());
-        undoBtn.setOnAction(e -> performUndo());
+        resetBtn.setOnAction(e -> {});
+        undoBtn.setOnAction(e -> {});
         applyLimitBtn.setOnAction(e -> updateMoveLimit());
 
-        resetToDefault();
+        // setup for the board
+        int initialVal = 1;
+        for (int r = 0; r < GRID_SIZE; r++) {
+            for (int c = 0; c < GRID_SIZE; c++) {
+                if (r == 2 && c == 2) {
+                    gridState[r][c] = 0;
+                } else {
+                    gridState[r][c] = initialVal++;
+                }
+            }
+        }
+        renderBoard();
 
         BorderPane root = new BorderPane();
         root.setTop(controlBar);
@@ -103,11 +100,9 @@ public class Happy extends Application {
     private void handleTileClick(int r, int c) {
         if (isGameOver) return;
 
-        // Verify adjacency to empty spot (Manhattan distance = 1)
+        // Verify if the slot is empty
         if (Math.abs(r - emptyRow) + Math.abs(c - emptyCol) == 1) {
-            moveHistory.add(new GameStateRecord(gridState, emptyRow, emptyCol));
-
-            // Swap empty cell with clicked tile
+            // Swap empty
             gridState[emptyRow][emptyCol] = gridState[r][c];
             gridState[r][c] = 0;
             emptyRow = r;
@@ -140,46 +135,8 @@ public class Happy extends Application {
         }
 
         moveCount = 0;
-        moveHistory.clear();
         isGameOver = false;
         statusLabel.setText("Game in progress...");
-        renderBoard();
-    }
-
-    private void resetToDefault() {
-        int initialVal = 1;
-        for (int r = 0; r < GRID_SIZE; r++) {
-            for (int c = 0; c < GRID_SIZE; c++) {
-                if (r == 2 && c == 2) {
-                    gridState[r][c] = 0;
-                } else {
-                    gridState[r][c] = initialVal++;
-                }
-            }
-        }
-        emptyRow = 2;
-        emptyCol = 2;
-        moveCount = 0;
-        moveHistory.clear();
-        isGameOver = false;
-        statusLabel.setText("Board Reset");
-        renderBoard();
-    }
-
-    private void performUndo() {
-        if (moveHistory.isEmpty()) return;
-
-        GameStateRecord lastState = moveHistory.remove(moveHistory.size() - 1);
-        for (int r = 0; r < GRID_SIZE; r++) {
-            System.arraycopy(lastState.snapshot[r], 0, gridState[r], 0, GRID_SIZE);
-        }
-
-        emptyRow = lastState.blankR;
-        emptyCol = lastState.blankC;
-        moveCount--;
-        isGameOver = false; 
-
-        statusLabel.setText("Undo Applied");
         renderBoard();
     }
 
